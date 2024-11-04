@@ -5,12 +5,10 @@
 
 import java.io.File;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.SocketException;
-import java.net.UnknownHostException;
+import java.io.ObjectOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.net.*;
 
 public class Protocol {
 
@@ -79,19 +77,27 @@ public class Protocol {
 		byte[] buffer = null;
 		MetaData metaData = new MetaData();
 		metaData.setName(outputFileName);         // Set the name of the file to create on the server
-		metaData.setSize(fileSize);         // Set the size of the file to send
-		metaData.setMaxSegSize(maxPayload); // Set the max payload size
+		metaData.setSize(fileSize);               // Set the size of the file to send
+		metaData.setMaxSegSize(maxPayload);       // Set the max payload size
 
-		try {
-			// Serialize the MetaData object and send it to the server
-			ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream);
-			objectOutputStream.writeObject(metaData);
-			objectOutputStream.flush(); // Ensure all data is sent
+		try  {
+			buffer = toByteArray(metaData);
+			DatagramPacket dpSend = new DatagramPacket(buffer, buffer.length, ipAddress, portNumber);
+			socket.send(dpSend);
+			System.out.println("SENDER: meta data is sent (file name, size, payload size):" + outputFileName + fileSize + maxPayload);
+		} catch (IOException r) {
+			System.out.println("error sending metadata");
+			System.exit(1);
+		}
 
-			System.out.println("Metadata sent successfully: " + metaData);
-		} catch (IOException e) {
-			System.err.println("Error sending metadata: " + e.getMessage());
-			// Handle error appropriately, such as retrying or logging
+	}
+
+	public byte[] toByteArray(MetaData metaData) throws IOException {
+		try (ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+			 ObjectOutputStream objectStream = new ObjectOutputStream(byteStream)) {
+			objectStream.writeObject(metaData);
+			objectStream.flush();
+			return byteStream.toByteArray();
 		}
 	}
 
