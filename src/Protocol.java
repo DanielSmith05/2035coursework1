@@ -5,6 +5,8 @@
 
 import java.io.File;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
@@ -22,7 +24,9 @@ public class Protocol {
 	 * The following attributes control the execution of a transfer protocol and provide access to the 
 	 * resources needed for a file transfer (such as the file to transfer, etc.)	   
 	 * 
-	 */ 
+	 */
+
+	private OutputStream outputStream;
 
 	private InetAddress ipAddress;      // the address of the server to transfer the file to. This should be a well-formed IP address.
 	private int portNumber; 		    // the  port the server is listening on
@@ -71,9 +75,28 @@ public class Protocol {
 	 * output relevant information messages for the user to follow progress of the file transfer.
 	 * This method does not set any of the attributes of the protocol.	  
 	 */
-	public void sendMetadata(){
+	public void sendMetadata() {
+		byte[] buffer = null;
+		MetaData metaData = new MetaData();
+		metaData.setName(outputFileName);         // Set the name of the file to create on the server
+		metaData.setSize(fileSize);         // Set the size of the file to send
+		metaData.setMaxSegSize(maxPayload); // Set the max payload size
 
+		try {
+			// Serialize the MetaData object and send it to the server
+			ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream);
+			objectOutputStream.writeObject(metaData);
+			objectOutputStream.flush(); // Ensure all data is sent
+
+			System.out.println("Metadata sent successfully: " + metaData);
+		} catch (IOException e) {
+			System.err.println("Error sending metadata: " + e.getMessage());
+			// Handle error appropriately, such as retrying or logging
+		}
 	}
+
+
+
 
 	/* 
 	 * This method:
@@ -85,7 +108,7 @@ public class Protocol {
 	 * set the checksum of the data segment.
 	 * The method returns -1 if this is the last data segment (no more data to be read) and 0 otherwise.
 	 */
-	public int readData() { 
+	public int readData() {
 		System.exit(0);
 		return 0;
 	}
